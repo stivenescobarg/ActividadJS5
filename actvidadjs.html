@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Solución: Gestión de Películas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+      cursor: pointer;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    #error, #exito {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #error {
+      color: red;
+      background-color: #ffe6e6;
+    }
+    #exito {
+      color: green;
+      background-color: #e6ffe6;
+    }
+    #loading {
+      color: #007bff;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    button, input[type="submit"] {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover, input[type="submit"]:hover {
+      background-color: #0056b3;
+    }
+    form {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f8f8f8;
+      border-radius: 5px;
+    }
+    label {
+      display: block;
+      margin: 8px 0;
+    }
+    input[type="text"], input[type="number"] {
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    input[type="checkbox"] {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gestión de Películas</h1>
+  <button onclick="cargarPeliculas()">Cargar Películas</button>
+  <div id="loading" style="display: none;">Cargando...</div>
+
+  <h2>Crear Nueva Película</h2>
+  <form id="form-crear" onsubmit="event.preventDefault(); crearPelicula();">
+    <label>Título: <input type="text" id="crear-titulo" required></label>
+    <label>Género: <input type="text" id="crear-genero" required></label>
+    <label>Director: <input type="text" id="crear-director" required></label>
+    <label>Año: <input type="number" id="crear-anio" min="1888" max="2025" required></label>
+    <label>Calificación: <input type="number" id="crear-rating" step="0.1" min="0" max="10" required></label>
+    <label>Popular: <input type="checkbox" id="crear-popular"></label>
+    <input type="submit" value="Crear Película">
+  </form>
+
+  <h2>Actualizar Película</h2>
+  <form id="form-actualizar" onsubmit="event.preventDefault(); actualizarPelicula();">
+    <label>ID: <input type="text" id="actualizar-id" required></label>
+    <label>Título: <input type="text" id="actualizar-titulo" required></label>
+    <label>Género: <input type="text" id="actualizar-genero" required></label>
+    <label>Director: <input type="text" id="actualizar-director" required></label>
+    <label>Año: <input type="number" id="actualizar-anio" min="1888" max="2025" required></label>
+    <label>Calificación: <input type="number" id="actualizar-rating" step="0.1" min="0" max="10" required></label>
+    <label>Popular: <input type="checkbox" id="actualizar-popular"></label>
+    <input type="submit" value="Actualizar Película">
+  </form>
+
+  <table id="tabla-peliculas">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Género</th>
+        <th>Director</th>
+        <th>Año</th>
+        <th>Calificación</th>
+        <th>Popular</th>
+      </tr>
+    </thead>
+    <tbody id="cuerpo-tabla"></tbody>
+  </table>
+  <div id="exito"></div>
+  <div id="error"></div>
+
+  <script>
+    const API_URL = 'https://playground.mockoon.com/movies';
+
+    function mostrarMensaje(id, mensaje) {
+      document.getElementById('exito').textContent = '';
+      document.getElementById('error').textContent = '';
+      if (id === 'exito') {
+        document.getElementById('exito').textContent = mensaje;
+      } else {
+        document.getElementById('error').textContent = mensaje;
+      }
+    }
+
+    function limpiarTabla() {
+      document.getElementById('cuerpo-tabla').innerHTML = '';
+    }
+
+    function agregarFila(pelicula) {
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${pelicula.id}</td>
+        <td>${pelicula.titulo}</td>
+        <td>${pelicula.genero}</td>
+        <td>${pelicula.director}</td>
+        <td>${pelicula.anio}</td>
+        <td>${pelicula.rating}</td>
+        <td>${pelicula.popular ? 'Sí' : 'No'}</td>
+      `;
+      document.getElementById('cuerpo-tabla').appendChild(fila);
+    }
+
+    // GET - Cargar películas
+    async function cargarPeliculas() {
+      limpiarTabla();
+      mostrarMensaje('exito', '');
+      document.getElementById('loading').style.display = 'block';
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Error al cargar películas');
+        const peliculas = await response.json();
+        peliculas.forEach(agregarFila);
+        mostrarMensaje('exito', 'Películas cargadas correctamente');
+      } catch (error) {
+        mostrarMensaje('error', error.message);
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    // POST - Crear película
+    async function crearPelicula() {
+      const data = {
+        titulo: document.getElementById('crear-titulo').value,
+        genero: document.getElementById('crear-genero').value,
+        director: document.getElementById('crear-director').value,
+        anio: parseInt(document.getElementById('crear-anio').value),
+        rating: parseFloat(document.getElementById('crear-rating').value),
+        popular: document.getElementById('crear-popular').checked
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al crear película');
+        const nuevaPelicula = await response.json();
+        agregarFila(nuevaPelicula);
+        mostrarMensaje('exito', 'Película creada con éxito');
+      } catch (error) {
+        mostrarMensaje('error', error.message);
+      }
+    }
+
+    // PUT - Actualizar película
+    async function actualizarPelicula() {
+      const id = document.getElementById('actualizar-id').value;
+      const data = {
+        titulo: document.getElementById('actualizar-titulo').value,
+        genero: document.getElementById('actualizar-genero').value,
+        director: document.getElementById('actualizar-director').value,
+        anio: parseInt(document.getElementById('actualizar-anio').value),
+        rating: parseFloat(document.getElementById('actualizar-rating').value),
+        popular: document.getElementById('actualizar-popular').checked
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al actualizar película');
+        mostrarMensaje('exito', 'Película actualizada correctamente');
+        cargarPeliculas();
+      } catch (error) {
+        mostrarMensaje('error', error.message);
+      }
+    }
+  </script>
+</body>
+</html>
